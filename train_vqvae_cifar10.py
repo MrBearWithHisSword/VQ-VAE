@@ -95,7 +95,8 @@ def main(args):
         ]
     )
 
-    dataset = datasets.ImageFolder(args.path, transform=transform)
+    # dataset = datasets.ImageFolder(args.path, transform=transform)
+    dataset = datasets.CIFAR10(root='datasets/cifar10/', transform=transform)
     sampler = dist.data_sampler(dataset, shuffle=True, distributed=args.distributed)
     loader = DataLoader(
         dataset, batch_size=128 // args.n_gpu, sampler=sampler, num_workers=2
@@ -125,7 +126,7 @@ def main(args):
         train(i, loader, model, optimizer, scheduler, device)
 
         if dist.is_primary():
-            torch.save(model.state_dict(), f"checkpoint/{}/vqvae_{str(i + 1).zfill(3)}.pt".format(args.DatasetName))
+            torch.save(model.state_dict(), f"checkpoint/{args.DatasetName}/vqvae_{str(i + 1).zfill(3)}.pt")
 
 
 if __name__ == "__main__":
@@ -143,8 +144,8 @@ if __name__ == "__main__":
     parser.add_argument("--epoch", type=int, default=560)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--sched", type=str)
-    parser.add_argument("path", type=str)
-    parser.add_argument("DatasetName", type=str, default="FFHQ")
+    # parser.add_argument("path", type=str)
+    parser.add_argument("--DatasetName", type=str, default="CIFAR10")
 
     args = parser.parse_args()
 

@@ -102,3 +102,16 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+#caches
+out/
+ffhq1k/
+ffhqtest/
+vqvae_560.pt
+sample/
+debug/
+datasets
+checkpoint/
+.vscode/
+.history/
+
