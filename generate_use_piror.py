@@ -14,6 +14,7 @@ from scheduler import CycleScheduler
 from vqvae import VQVAE
 from torchvision import utils
 from tqdm import tqdm
+from torch.distributions import *
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -35,7 +36,8 @@ if __name__ == '__main__':
         )
         top, bottom, label = next(iter(loader))
         # random sample
-        top, bottom = torch.randint(512, top.shape), torch.randint(512, bottom.shape)
+        # top, bottom = torch.randint(512, top.shape), torch.randint(512, bottom.shape)
+        top, bottom = torch.zeros(top.shape).long().cuda(), torch.zeros(bottom.shape).long().cuda()
         # top_ids
         ckpt_top = torch.load(args.ckpt_top)
         top_args = ckpt_top['args']
@@ -55,8 +57,16 @@ if __name__ == '__main__':
         top_model.eval()
         # samples_id_t = torch.randint(512, [num_sample,32,32])
         samples_id_t = top
-        id_t_logits = top_model(samples_id_t)[0]
-        _, id_t = id_t_logits.max(1)
+        for row in tqdm(range(samples_id_t.shape[1])):
+            for col in range(samples_id_t.shape[2]):
+                id_t_logits = top_model(samples_id_t)[0].permute(0, 2, 3, 1)
+                m = Categorical(logits=id_t_logits)
+                id_t = m.sample()
+                # _, id_t = id_t_logits.max(1)
+                samples_id_t[:, row, col] = id_t[:, row, col]
+        id_t = samples_id_t
+        # id_t_logits = top_model(samples_id_t)[0]
+        # _, id_t = id_t_logits.max(1)
         # bottom_ids
         ckpt_bottom = torch.load(args.ckpt_bottom) 
         bottom_args = ckpt_bottom['args']
@@ -77,8 +87,17 @@ if __name__ == '__main__':
         bottom_model = bottom_model.to(device)
         # samples_id_b = torch.randint(512, (num_sample, 64, 64))
         samples_id_b = bottom
-        id_b_logits = bottom_model(samples_id_b, condition=id_t)[0]
-        _, id_b = id_b_logits.max(1)
+        # id_b_logits = bottom_model(samples_id_b, condition=id_t)[0]
+        # _, id_b = id_b_logits.max(1)
+        for row in tqdm(range(samples_id_b.shape[1])):
+            for col in range(samples_id_b.shape[2]):
+                id_b_logits = bottom_model(samples_id_b, condition=id_t)[0].permute(0, 2, 3, 1)
+                m = Categorical(logits=id_b_logits)
+                id_b = m.sample()
+                # _, id_b = id_b_logits.max(1)
+                samples_id_b[:, row, col] = id_b[:, row, col]
+        id_b = samples_id_b
+        # _, id_b = id_b_logits.max(1)
         # Decoding
         vqvae = VQVAE()
         vqvae.load_state_dict(torch.load(args.ckpt_vqvae))
