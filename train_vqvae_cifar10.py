@@ -101,7 +101,9 @@ def main(args):
     loader = DataLoader(
         dataset, batch_size=128 // args.n_gpu, sampler=sampler, num_workers=2
     )
-
+    
+    model = VQVAE()
+    model.load_state_dict(torch.load('checkpoint/vqvae_075.py')['model'])
     model = VQVAE().to(device)
 
     if args.distributed:
@@ -122,7 +124,7 @@ def main(args):
             warmup_proportion=0.05,
         )
 
-    for i in range(args.epoch):
+    for i in range(76, args.epoch):
         train(i, loader, model, optimizer, scheduler, device)
 
         if dist.is_primary():
